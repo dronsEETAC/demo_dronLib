@@ -11,7 +11,7 @@ def _send_telemetry_info(self, process_telemetry_info):
     self.sendTelemetryInfo = True
     while self.sendTelemetryInfo:
         #msg = self.vehicle.recv_match(type='AHRS2', blocking= True).to_dict()
-        msg = self.vehicle.recv_match(type='GLOBAL_POSITION_INT', blocking= False)
+        msg = self.vehicle.recv_match(type='GLOBAL_POSITION_INT', blocking= True)
         if msg:
             msg = msg.to_dict()
             self.lat = float(msg['lat'] / 10 ** 7)
