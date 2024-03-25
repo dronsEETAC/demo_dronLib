@@ -10,6 +10,7 @@ def informar (mensaje):
 def showTelemetryInfo (telemetry_info):
     global heading, altitude, groundSpeed, state
     global altShowLbl, headingShowLbl, speedShowLbl
+<<<<<<< HEAD
     altShowLbl['text'] = round (telemetry_info['alt'],2)
     headingShowLbl['text'] =  round(telemetry_info['heading'],2)
     speedShowLbl['text'] = round (telemetry_info['groundSpeed'],2)
@@ -21,6 +22,18 @@ def connect ():
     baud = 115200
     dron.connect(connection_string,baud)
     speedSldr.set(1)
+=======
+    altShowLbl['text'] = telemetry_info['alt']
+    headingShowLbl['text'] =  telemetry_info['heading']
+    speedShowLbl['text'] = telemetry_info['groundSpeed']
+
+
+def connect ():
+    global dron
+    connection_string ='tcp:127.0.0.1:5763'
+    baud = 115200
+    dron.connect(connection_string,baud)
+>>>>>>> 20b3b69fafb27e1b439ca79c23128582cc426bc8
 
 def arm ():
     global dron
@@ -223,7 +236,11 @@ def crear_ventana():
     headingLbl.grid(row=0, column=1,  padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
     speedLbl = tk.Label(telemetryFrame, text='Speed')
+<<<<<<< HEAD
     speedLbl.grid(row=0, column=2,  padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
+=======
+    speedLbl.grid(row=0, column=3,  padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
+>>>>>>> 20b3b69fafb27e1b439ca79c23128582cc426bc8
 
 
     altShowLbl = tk.Label(telemetryFrame, text='')

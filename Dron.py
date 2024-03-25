@@ -19,12 +19,14 @@ class Dron(object):
         self.direction = 'Stop' # se usa en dron_nav
         self.id = None
         self.sendTelemetryInfo = False #usado en dron_telemetry
+
         self.sendLocalTelemetryInfo = False  # usado en dron_local_telemetry
 
         self.step = 1 # se usa en dron_mov. Son los metros que mueve en cada paso
         self.localGeofence = None # se usa en dron_mov para evitar que el dron se salga del espacio
         self.position = [0,0,0] # se usa en dron_mov para identificar la posición del dron dentro del espacio
         self.heading = None
+
 
     # aqui se importan los métodos de la clase Dron, que están organizados en ficheros.
     # Así podría orgenizarse la aportación de futuros alumnos que necesitasen incorporar nuevos servicios
@@ -43,6 +45,9 @@ class Dron(object):
     from modules.dron_parameters import getParams, _getParams, setParams, _setParams
     from modules.dron_setGeofence import setGEOFence, _setGEOFence
     from modules.dron_telemetry import send_telemetry_info, _send_telemetry_info, stop_sending_telemetry_info
+
     from modules.dron_local_telemetry import send_local_telemetry_info, _send_local_telemetry_info, stop_sending_local_telemetry_info
     from modules.dron_mov import move, _move, _prepare_command_mov, setStep, moveto, _moveto, _prepare_command_movto, inGeofence, setLocalGeofence
     from modules.dron_mov import inGeofence, _futurePosition, check, _distance, _destination,setNavSpeed
+
+

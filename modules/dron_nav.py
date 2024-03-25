@@ -13,7 +13,6 @@ import time
 from pymavlink import mavutil
 import pymavlink.dialects.v20.all as dialect
 
-
 def _prepare_command(self, velocity_x, velocity_y, velocity_z, bodyRef = False):
     """
     Move vehicle in direction based on specified velocity vectors.
@@ -113,9 +112,7 @@ def go(self, direction):
     speed = self.navSpeed
     self.direction = direction
     if self.going:
-        print ('estoy enb go: ', direction)
         if direction == "North":
-            print ('2 vamos al norte')
             self.cmd = self._prepare_command(speed, 0, 0)  # NORTH
         if direction == "South":
             self.cmd = self._prepare_command(-speed, 0, 0)  # SOUTH
@@ -135,3 +132,5 @@ def go(self, direction):
             self.cmd = self._prepare_command(0, 0, 0)  # STOP
         if direction == "Forward":
             self.cmd = self._prepare_command(speed, 0, 0, bodyRef = True)  # STOP
+
+
