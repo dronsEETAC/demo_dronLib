@@ -35,7 +35,7 @@ class Dron(object):
     # ese atributo hay que declararlo aqui y no en el fichero con los métodos nuevos.
     # Ese es el caso del atributo going, que lo tengo que declarar aqui y preferiría poder declararlo en el fichero dron_goto
 
-    from modules.dron_connect import connect, _connect
+    from modules.dron_connect import connect, _connect, disconnect, _handle_heartbeat
     from modules.dron_arm import arm, _arm
     from modules.dron_takeOff import takeOff, _takeOff
     from modules.dron_RTL_Land import  RTL, Land, _goDown

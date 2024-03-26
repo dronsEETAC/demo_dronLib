@@ -7,14 +7,12 @@ from pymavlink import mavutil
 
 
 def _send_local_telemetry_info(self, process_local_telemetry_info):
-
-    frequency_hz = 1
-    self.vehicle.mav.request_data_stream_send(
+    '''self.vehicle.mav.request_data_stream_send(
         self.vehicle.target_system,  self.vehicle.target_component,
         mavutil.mavlink.MAV_DATA_STREAM_POSITION,
         10,
         1
-    )
+    )'''
 
 
     self.sendLocalTelemetryInfo = True

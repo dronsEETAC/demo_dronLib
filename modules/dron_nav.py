@@ -131,6 +131,16 @@ def go(self, direction):
         if direction == "Stop":
             self.cmd = self._prepare_command(0, 0, 0)  # STOP
         if direction == "Forward":
-            self.cmd = self._prepare_command(speed, 0, 0, bodyRef = True)  # STOP
+            self.cmd = self._prepare_command(speed, 0, 0, bodyRef = True)
+        if direction == "Back":
+            self.cmd = self._prepare_command(-speed, 0, 0, bodyRef=True)
+        if direction == "Left":
+            self.cmd = self._prepare_command(0, speed, 0, bodyRef=True)
+        if direction == "Right":
+            self.cmd = self._prepare_command(0, -speed, 0, 0, bodyRef=True)
+        if direction == "Up":
+            self.cmd = self._prepare_command(0, 0, -speed, bodyRef=True)
+        if direction == "Down":
+            self.cmd = self._prepare_command(0, 0, speed, bodyRef=True)
 
 

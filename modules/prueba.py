@@ -38,9 +38,9 @@ msg = the_connection.mav.command_long_encode(
 the_connection.mav.send(msg)
 
 
-the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10, the_connection.target_system,
+'''the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10, the_connection.target_system,
                          the_connection.target_component, frame1, int(0b110111111000), 200, 400, -10, 0, 0, 0, 0, 0, 0, 45, 0.5))
-
+'''
 '''the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10, the_connection.target_system,
                          the_connection.target_component, frame3, int(0b1100111111000111), 0, 0,0, 4, 0, 0, 0, 0, 0, 45, 0.5))
 '''
@@ -51,5 +51,5 @@ the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_me
 
 while 1:
     msg = the_connection.recv_match(
-        type='LOCAL_POSITION_NED', blocking=True)
+        type='HEARTBEAT', blocking=True)
     print(msg)
