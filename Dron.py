@@ -2,16 +2,18 @@
 class Dron(object):
     def __init__(self):
 
-        self.state = "desconectado"
+        self.state = "disconnected"
         self.lat = None
         self.lon = None
         self.alt = None
-        ''' os otros estados son:
-            conectado
-            armando
-            despegando
-            volando
-            regresando
+        ''' los otros estados son:
+            connected
+            arming
+            armed
+            takingOff
+            flying
+            returning
+            landing
         '''
 
         self.going = False # se usa en dron_nav

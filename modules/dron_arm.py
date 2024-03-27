@@ -6,13 +6,8 @@ from pymavlink import mavutil
 
 
 def _arm(self, callback=None, params = None):
+    self.state = "arming"
     mode = 'GUIDED'
-
-    # Check if mode is available
-    if mode not in self.vehicle.mode_mapping():
-        print('Unknown mode : {}'.format(mode))
-        print('Try:', list(self.vehicle.mode_mapping().keys()))
-
     # Get mode ID
     mode_id = self.vehicle.mode_mapping()[mode]
     self.vehicle.mav.set_mode_send(
@@ -24,7 +19,7 @@ def _arm(self, callback=None, params = None):
     self.vehicle.mav.command_long_send(self.vehicle.target_system, self.vehicle.target_component,
                                          mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 0, 1, 0, 0, 0, 0, 0, 0)
     self.vehicle.motors_armed_wait()
-    self.state = "armado"
+    self.state = "armed"
     if callback != None:
         if self.id == None:
             if params == None:
@@ -39,9 +34,13 @@ def _arm(self, callback=None, params = None):
 
 
 def arm(self, blocking=True, callback=None, params = None):
-    if blocking:
-        self._arm()
+    if self.state == 'connected':
+        if blocking:
+            self._arm()
+        else:
+            armThread = threading.Thread(target=self._arm, args=[callback, params])
+            armThread.start()
+        return True
     else:
-        armThread = threading.Thread(target=self._arm, args=[callback, params])
-        armThread.start()
+        return False
 

@@ -11,22 +11,17 @@ def _handle_heartbeat(self):
         msg = self.vehicle.recv_match(
             type='HEARTBEAT', blocking=True)
         print (msg)
-        if msg.base_mode == 89:
-            print ('Desarmado')
-        elif msg.base_mode == 217:
-            print('Armado')
-
-
+        if msg.base_mode == 89 and self.state == 'armed' :
+            self.state = 'connected'
 
 
 # Some more small functions
 def _connect(self, connection_string, baud, callback=None, params=None):
-    #self.vehicle = mavutil.mavlink_connection('tcp:127.0.0.1:5762')
     self.vehicle = mavutil.mavlink_connection(connection_string, baud)
     self.vehicle.wait_heartbeat()
     handleThread = threading.Thread (target = self._handle_heartbeat)
     handleThread.start()
-    self.state = "conectado"
+    self.state = "connected"
     '''frequency_hz = 1
     self.vehicle.mav.command_long_send(
         self.vehicle.target_system, self.vehicle.target_component,
@@ -64,22 +59,29 @@ def connect(self,
             blocking=True,
             callback=None,
             params = None):
-    print ('id: ', id)
-    self.id = id
-    if blocking:
-        self._connect(connection_string, baud)
+    if self.state == 'disconnected':
+        self.id = id
+        if blocking:
+            self._connect(connection_string, baud)
+        else:
+            connectThread = threading.Thread(target=self._connect, args=[connection_string, baud, callback, params, ])
+            connectThread.start()
+        return True
     else:
-        connectThread = threading.Thread(target=self._connect, args=[connection_string, baud, callback, params, ])
-        connectThread.start()
+        return False
 
 def disconnect (self):
-    self.state = "conectado"
-    self.vehicle.mav.request_data_stream_send(
-        self.vehicle.target_system, self.vehicle.target_component,
-        mavutil.mavlink.MAV_DATA_STREAM_POSITION,
-        10,
-        0
-    )
-    self.stop_sending_telemetry_info()
-    self.stop_sending_local_telemetry_info()
-    self.vehicle.close()
+    if self.state == 'connected':
+        self.state = "disconnected"
+        self.vehicle.mav.request_data_stream_send(
+            self.vehicle.target_system, self.vehicle.target_component,
+            mavutil.mavlink.MAV_DATA_STREAM_POSITION,
+            10,
+            0
+        )
+        self.stop_sending_telemetry_info()
+        self.stop_sending_local_telemetry_info()
+        self.vehicle.close()
+        return True
+    else:
+        return False

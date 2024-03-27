@@ -17,13 +17,15 @@ def _goDown(self, mode, callback=None, params = None):
         if msg:
             msg = msg.to_dict()
             alt = float(msg['relative_alt'] / 1000)
-            if alt < 0.2:
+            print (alt)
+            if alt < 0.5:
                 break
             time.sleep(2)
 
     self.vehicle.motors_disarmed_wait()
-    self.state = "conectado"
+    self.state = "connected"
     if callback != None:
+        print ('llamo al call back')
         if self.id == None:
             if params == None:
                 callback()
@@ -37,20 +39,27 @@ def _goDown(self, mode, callback=None, params = None):
 
 
 def RTL (self, blocking=True, callback=None, params = None):
-    self.state = 'retornando'
-    if blocking:
-        self._goDown('RTL')
+    if self.state == 'flying':
+        self.state = 'returning'
+        if blocking:
+            self._goDown('RTL')
+        else:
+            goingDownThread = threading.Thread(target=self._goDown, args=['RTL', callback, params])
+            goingDownThread.start()
+        return True
     else:
-        goingDownThread = threading.Thread(target=self._goDown, args=['RTL', callback, params])
-        goingDownThread.start()
+        return False
 
 def Land (self, blocking=True, callback=None, params = None):
-    self.state = 'aterrizando'
-    if blocking:
-        self._goDown('LAND')
+    if self.state == 'flying':
+        self.state = 'landing'
+        if blocking:
+            self._goDown('LAND')
+        else:
+            print ('pongo en marcha el thread para land')
+            goingDownThread = threading.Thread(target=self._goDown, args=['LAND', callback, params])
+            goingDownThread.start()
+        return True
     else:
-        print ('pongo el thread')
-        goingDownThread = threading.Thread(target=self._goDown, args=['LAND', callback, params])
-        goingDownThread.start()
-
+        return False
 

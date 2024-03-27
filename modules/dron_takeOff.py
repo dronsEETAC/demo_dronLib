@@ -3,8 +3,7 @@ import time
 from pymavlink import mavutil
 
 def _takeOff(self, aTargetAltitude,callback=None, params = None):
-    print ('empiezo a despegar')
-    self.state = "despegando"
+    self.state = "takingOff"
     self.vehicle.mav.command_long_send(self.vehicle.target_system, self.vehicle.target_component,
                                          mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, aTargetAltitude)
 
@@ -20,7 +19,7 @@ def _takeOff(self, aTargetAltitude,callback=None, params = None):
         time.sleep(2)
 
 
-    self.state = "volando"
+    self.state = "flying"
     if callback != None:
         if self.id == None:
             if params == None:
@@ -36,9 +35,12 @@ def _takeOff(self, aTargetAltitude,callback=None, params = None):
 
 
 def takeOff(self, aTargetAltitude, blocking=True, callback=None, params = None):
-    if blocking:
-        self._takeOff(aTargetAltitude)
+    if self.state == 'armed':
+        if blocking:
+            self._takeOff(aTargetAltitude)
+        else:
+            takeOffThread = threading.Thread(target=self._takeOff, args=[aTargetAltitude, callback, params])
+            takeOffThread.start()
+        return True
     else:
-        takeOffThread = threading.Thread(target=self._takeOff, args=[aTargetAltitude, callback, params])
-        takeOffThread.start()
-
+        return False

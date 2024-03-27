@@ -181,11 +181,12 @@ def _moveto (self, destination, callback=None, params = None):
 
 
 def moveto(self, position, blocking=True, callback=None, params = None):
+# Esto hay que arreglarlo. Debería comprobar que el dron está flying
+# Además, debería compronar que hay un geofence antes de hacer ekl chequeo
     if self.inGeofence (position):
         if blocking:
             self._moveto(position)
         else:
-            print('1 vamos a ', position)
             moveThread = threading.Thread(target=self._moveto, args=[position, callback, params,])
             moveThread.start()
         return True
@@ -251,6 +252,7 @@ def check (self, direction):
         return False
 
 def setNavSpeed (self, speed):
+    print ('fijamos la velocidad ya ', speed)
     msg = self.vehicle.mav.command_long_encode(
         0, 0,  # Sistema y componente (0 para sistema no tripulado)
         mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,  # Comando para cambiar la velocidad de navegación

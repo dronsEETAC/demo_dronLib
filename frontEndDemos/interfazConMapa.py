@@ -54,16 +54,19 @@ def goHere (event):
     global conversor
     global dronIcon, mapa, iconSize
     global dron, area
-    global menu, destination
+    global menu, destination, takeOffBtn
     menu.post(event.x_root, event.y_root)
 
-    posX,posY = conversor.convertToPosition(event.x, event.y)
+    if takeOffBtn ['bg'] == 'green':
+        posX,posY = conversor.convertToPosition(event.x, event.y)
 
-    if not dron.moveto ((posX,posY, dron.alt), blocking = False, callback = enDestino):
-        mapa.itemconfig(area, outline='red', width=10)
+        if not dron.moveto ((posX,posY, dron.alt), blocking = False, callback = enDestino):
+            mapa.itemconfig(area, outline='red', width=10)
+        else:
+            mapa.itemconfig(area, outline='grey', width=10)
+            destination = mapa.create_oval(event.x - 5, event.y -5 , event.x + 5, event.y + 5 , fill='blue')
     else:
-        mapa.itemconfig(area, outline='grey', width=10)
-        destination = mapa.create_oval(event.x - 5, event.y -5 , event.x + 5, event.y + 5 , fill='blue')
+        messagebox.showerror(title=None, message="El dron no está volando")
 
 
 
@@ -146,9 +149,24 @@ def process_local_telemetry_info (local_telemetry_info):
 
 
 def process_telemetry_info (telemetry_info):
-    global mapa, arrow
+    global mapa, dronIcon, dronHeading, armBtn
     heading = round(telemetry_info['heading'],2)
     cambiar_orientacion(heading)
+
+    if telemetry_info['state'] == 'connected' and armBtn['bg'] == 'green':
+        mapa.itemconfig(dronIcon, fill='red')
+        mapa.itemconfig(dronHeading, fill='red')
+        armBtn['bg'] = 'orange',
+        armBtn['text'] = 'Armar',
+        armBtn['fg'] = 'black'
+    '''elif telemetry_info['state'] == 'armado':
+        mapa.itemconfig(dronIcon, fill='yellow')
+        mapa.itemconfig(dronHeading, fill='yellow')
+        armBtn['bg'] = 'green',
+        armBtn['text'] = 'Armado',
+        armBtn['fg'] = 'white'
+    '''
+
 
 
 
@@ -170,47 +188,53 @@ def connect ():
         stepSldr.set (0.5)
 
         alturaSldr.set (0)
-        navSpeedSldr.set (1)
-        dron.setNavSpeed(1)
+        print ('llamo a set del slider')
+        navSpeedSldr.set (1.0)
+        print('llamo a set del dron')
+        dron.setNavSpeed(1.0)
         dron.send_local_telemetry_info(process_local_telemetry_info)
         dron.send_telemetry_info(process_telemetry_info)
         connectBtn ['bg']='green'
         connectBtn ['text']='Desconectar'
         connectBtn ['fg']='white'
-    else:
-        dron.disconnect()
-        mapa.delete (dronIcon)
-        mapa.delete (dronHeading)
-        connectBtn['bg'] = 'orange'
-        connectBtn['text'] = 'Conectar'
-        connectBtn['fg'] = 'black'
-        connectorEntry.delete(0, tk.END)
-        connectorEntry.insert (0,'sim')
 
+    else:
+        if dron.disconnect():
+            mapa.delete (dronIcon)
+            mapa.delete (dronHeading)
+            connectBtn['bg'] = 'orange'
+            connectBtn['text'] = 'Conectar'
+            connectBtn['fg'] = 'black'
+            connectorEntry.delete(0, tk.END)
+            connectorEntry.insert (0,'sim')
+        else:
+            messagebox.showerror(title=None, message="El dron esta volando")
 
 
 def arm ():
     global dron, mapa, dronIcon, dronHeading, armBtn
-    dron.arm()
-    mapa.itemconfig(dronIcon, fill='yellow')
-    mapa.itemconfig(dronHeading, fill='yellow')
-    armBtn['bg'] = 'green'
-    armBtn['text'] = 'Armado'
-    armBtn['fg'] = 'white'
-
-
-
-
+    if dron.arm():
+        mapa.itemconfig(dronIcon, fill='yellow')
+        mapa.itemconfig(dronHeading, fill='yellow')
+        armBtn['bg'] = 'green'
+        armBtn['text'] = 'Armado'
+        armBtn['fg'] = 'white'
+    else:
+        messagebox.showerror(title=None, message="El dron no está conectado")
 
 
 def takeoff ():
     global dron, mapa, dronIcon, dronHeading, takeOffAltSldr
-    dron.takeOff (takeOffAltSldr.get(), blocking = False,  callback = volando)
-    mapa.itemconfig(dronIcon, fill='orange')
-    mapa.itemconfig(dronHeading, fill='orange')
+    if dron.takeOff (takeOffAltSldr.get(), blocking = False,  callback = volando):
+        mapa.itemconfig(dronIcon, fill='orange')
+        mapa.itemconfig(dronHeading, fill='orange')
+    else:
+        messagebox.showerror(title=None, message="El dron no está armado")
+
 
 def enTierra ():
     global mapa, dronIcon, dronHeading, landBtn, armBtn, takeOffBtn, RTLBtn
+    print ('ya estoy en el call back')
     mapa.itemconfig(dronIcon, fill='red')
     mapa.itemconfig(dronHeading, fill='red')
     landBtn['bg'] = 'orange',
@@ -231,39 +255,39 @@ def enTierra ():
 
 def land():
     global dron
-    dron.Land(blocking = False,   callback = enTierra)
-    landBtn['bg'] = 'green',
-    landBtn['text'] = 'Aterrizando',
-    landBtn['fg'] = 'white'
+    if dron.Land(blocking = False,   callback = enTierra):
+        landBtn['bg'] = 'green',
+        landBtn['text'] = 'Aterrizando',
+        landBtn['fg'] = 'white'
+    else:
+        messagebox.showerror(title=None, message="El dron no está volando")
 
 def RTL():
     global dron, RTLBtn
-    dron.RTL(blocking = False,   callback = enTierra)
-    RTLBtn['bg'] = 'green',
-    RTLBtn['text'] = 'Retornando',
-    RTLBtn['fg'] = 'white'
+    if dron.RTL(blocking = False,   callback = enTierra):
+        RTLBtn['bg'] = 'green',
+        RTLBtn['text'] = 'Retornando',
+        RTLBtn['fg'] = 'white'
+    else:
+        messagebox.showerror(title=None, message="El dron no está volando")
 
 def llegada (btn):
     btn['bg'] = 'orange'
     btn['fg'] = 'black'
 
 def move (direction, btn = None):
-    global dron, area, mapa
-    btn['bg'] = 'green'
-    btn['fg'] = 'white'
-    if not dron.move (direction, blocking = False,  callback = lambda: llegada(btn)):
-        mapa.itemconfig (area, outline='red', width = 10 )
+    global dron, area, mapa, takeOffBtn
+    if takeOffBtn['bg'] == 'green':
+        btn['bg'] = 'green'
+        btn['fg'] = 'white'
+        if not dron.move (direction, blocking = False,  callback = lambda: llegada(btn)):
+            mapa.itemconfig (area, outline='red', width = 10 )
+        else:
+            mapa.itemconfig(area, outline='grey', width = 1 )
     else:
-        mapa.itemconfig(area, outline='grey', width = 1 )
-
-def startGo():
-    global dron
-    dron.startGo()
+        messagebox.showerror(title=None, message="El dron no está volando")
 
 
-def stopGo():
-    global dron
-    dron.stopGo()
 
 def startLocalTelem():
     global dron
@@ -274,13 +298,6 @@ def stopLocalTelem():
     global dron
     dron.stop_sending_local_telemetry_info()
 
-def fixHeading ():
-    global dron
-    dron.fixHeading()
-
-def unfixHeading ():
-    global dron
-    dron.unfixHeading()
 
 def changeHeading (heading):
     global dron
@@ -294,15 +311,9 @@ def setStep (step):
 
 def setNavSpeed (speed):
     global dron
+    print ('llamamos a fijar speed ', speed)
     dron.setNavSpeed(float(speed))
 
-
-
-def draw_arrow(canvas, x, y, length, angle_degrees):
-    angle_radians = math.radians(angle_degrees + 180)
-    x1 = x - length * math.sin(angle_radians)
-    y1 = y + length * math.cos(angle_radians)
-    return canvas.create_line(x, y, x1, y1, arrow=tk.LAST, fill="red", width=5)
 
 def crear_ventana():
     global dron
