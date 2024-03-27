@@ -10,7 +10,6 @@ def _handle_heartbeat(self):
     while True:
         msg = self.vehicle.recv_match(
             type='HEARTBEAT', blocking=True)
-        print (msg)
         if msg.base_mode == 89 and self.state == 'armed' :
             self.state = 'connected'
 

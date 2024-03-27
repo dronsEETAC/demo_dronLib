@@ -71,10 +71,7 @@ def _startGo(self):
     self.cmd = self._prepare_command(0, 0, 0)
     time.sleep(1)
 def startGo(self):
-    print ('entro')
-
-    if self.state == 'volando' or  self.state == 'despegando':
-        print('dentro')
+    if self.state == 'flying':
         self.going = True
         startGoThread = threading.Thread(target=self._startGo)
         startGoThread.start()
