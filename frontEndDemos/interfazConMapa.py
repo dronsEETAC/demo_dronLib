@@ -1,3 +1,4 @@
+import json
 import math
 import tkinter as tk
 from Dron import Dron
@@ -64,6 +65,7 @@ def goHere (event):
             mapa.itemconfig(area, outline='red', width=10)
         else:
             mapa.itemconfig(area, outline='grey', width=10)
+            dron.setNavSpeed(float (navSpeedSldr.get()))
             destination = mapa.create_oval(event.x - 5, event.y -5 , event.x + 5, event.y + 5 , fill='blue')
     else:
         messagebox.showerror(title=None, message="El dron no está volando")
@@ -79,16 +81,22 @@ def crearEspacio ():
     global height
     global dron
     global canvasSize, area
+    global controlFrame, scenarioFrame
 
     dimE_O = int (dimXSldr.get())
     dimN_S = int (dimYSldr.get())
     altura = int (dimZSldr.get())
     dron.setLocalGeofence(dimN_S,dimE_O,altura)
+
+    scenarioFrame.grid_forget()
+    controlFrame.grid(row=0, column=0, padx=5, pady=3, sticky=tk.N  + tk.E + tk.W)
+
     alturaSldr.config(from_=altura, to=0)
     alturaSldr.grid(row=0, column=0, padx=5,pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+
     takeOffAltSldr.config(from_=0, to=altura)
     takeOffAltSldr.set(3)
-    takeOffAltSldr.grid(row=6, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    takeOffAltSldr.grid(row=2, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
 
 
     iconSize = 20
@@ -159,13 +167,7 @@ def process_telemetry_info (telemetry_info):
         armBtn['bg'] = 'orange',
         armBtn['text'] = 'Armar',
         armBtn['fg'] = 'black'
-    '''elif telemetry_info['state'] == 'armado':
-        mapa.itemconfig(dronIcon, fill='yellow')
-        mapa.itemconfig(dronHeading, fill='yellow')
-        armBtn['bg'] = 'green',
-        armBtn['text'] = 'Armado',
-        armBtn['fg'] = 'white'
-    '''
+
 
 
 
@@ -184,6 +186,10 @@ def connect ():
             baud = 57600
         dron.connect(connection_string,baud)
         dibuja_dron()
+        parameters = json.dumps([
+            {'ID': "WP_YAW_BEHAVIOR", 'Value': 0},
+        ])
+        dron.setParams(parameters)
 
         stepSldr.set (0.5)
 
@@ -284,6 +290,7 @@ def move (direction, btn = None):
             mapa.itemconfig (area, outline='red', width = 10 )
         else:
             mapa.itemconfig(area, outline='grey', width = 1 )
+            dron.setNavSpeed(float(navSpeedSldr.get()))
     else:
         messagebox.showerror(title=None, message="El dron no está volando")
 
@@ -322,6 +329,7 @@ def crear_ventana():
     global connectBtn, armBtn, takeOffBtn, landBtn, RTLBtn
     global canvasSize
     global connectorEntry
+    global scenarioFrame, controlFrame
 
     canvasSize = 800
     dron = Dron()
@@ -335,9 +343,35 @@ def crear_ventana():
     ventana.columnconfigure(1, weight=1)
     ventana.columnconfigure(2, weight=1)
 
+    scenarioFrame = tk.LabelFrame(ventana, text="Configuración del escenario")
+    #scenarioFrame.grid(row=0, column=0, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    scenarioFrame.grid(row=0, column=0, padx=5, pady=3, sticky=tk.N + tk.E + tk.W)
+
+    scenarioFrame.rowconfigure(0, weight=1)
+    scenarioFrame.rowconfigure(1, weight=1)
+    scenarioFrame.rowconfigure(2, weight=1)
+    scenarioFrame.rowconfigure(3, weight=1)
+    scenarioFrame.columnconfigure(0, weight=1)
+
+    dimXSldr = tk.Scale(scenarioFrame, label="dimension X (m)", resolution=1, from_=0, to=50, tickinterval=10,
+                          orient=tk.HORIZONTAL)
+    dimXSldr.grid(row=0, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+
+    dimYSldr = tk.Scale(scenarioFrame, label="dimension Y (m)", resolution=1, from_=0, to=50, tickinterval=10,
+                        orient=tk.HORIZONTAL)
+    dimYSldr.grid(row=1, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+
+    dimZSldr = tk.Scale(scenarioFrame, label="dimension Z (m)", resolution=1, from_=0, to=10, tickinterval=1,
+                        orient=tk.HORIZONTAL)
+    dimZSldr.grid(row=2, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+
+    crearBtn = tk.Button(scenarioFrame, text="Crear espacio", bg="dark orange", command=crearEspacio)
+    crearBtn.grid(row=3, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+
+
     #############################################################################
     controlFrame = tk.LabelFrame(ventana, text="Controles")
-    controlFrame.grid(row=0, column=0, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    #controlFrame.grid(row=0, column=0, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
 
     controlFrame.rowconfigure(0, weight=1)
     controlFrame.rowconfigure(1, weight=1)
@@ -350,87 +384,65 @@ def crear_ventana():
     controlFrame.rowconfigure(8, weight=1)
     controlFrame.rowconfigure(9, weight=1)
     controlFrame.rowconfigure(10, weight=1)
-    controlFrame.rowconfigure(11, weight=1)
-    controlFrame.rowconfigure(12, weight=1)
-    controlFrame.rowconfigure(13, weight=1)
-    controlFrame.rowconfigure(14, weight=1)
-
 
     controlFrame.columnconfigure(0, weight=1)
     controlFrame.columnconfigure(1, weight=1)
 
-
-    dimXSldr = tk.Scale(controlFrame, label="dimension X (m)", resolution=1, from_=0, to=50, tickinterval=10,
-                          orient=tk.HORIZONTAL)
-    dimXSldr.grid(row=0, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
-
-    dimYSldr = tk.Scale(controlFrame, label="dimension Y (m)", resolution=1, from_=0, to=50, tickinterval=10,
-                        orient=tk.HORIZONTAL)
-    dimYSldr.grid(row=1, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
-
-    dimZSldr = tk.Scale(controlFrame, label="dimension Z (m)", resolution=1, from_=0, to=10, tickinterval=1,
-                        orient=tk.HORIZONTAL)
-    dimZSldr.grid(row=2, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
-
-    crearBtn = tk.Button(controlFrame, text="Crear espacio", bg="dark orange", command=crearEspacio)
-    crearBtn.grid(row=3, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
-
-
     connectBtn = tk.Button(controlFrame, text="Conectar", bg="dark orange", command = connect)
-    connectBtn.grid(row=4, column=0, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    connectBtn.grid(row=0, column=0, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
 
     connectorEntry = tk.Entry(controlFrame)
     connectorEntry.insert(0,'sim')
-    connectorEntry.grid(row=4, column=1, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    connectorEntry.grid(row=0, column=1, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
 
     armBtn = tk.Button(controlFrame, text="Armar", bg="dark orange", command=arm)
-    armBtn.grid(row=5, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    armBtn.grid(row=1, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
 
     takeOffAltSldr = tk.Scale(controlFrame, label="Altura de despegue (m)", resolution=1, from_=0, to=10, tickinterval=1,
                         orient=tk.HORIZONTAL)
-    #takeOffAltSldr.grid(row=6, column=0, columnspan=2, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
+    #takeOffAltSldr.grid(row=2, column=0, columnspan=2, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
     takeOffBtn = tk.Button(controlFrame, text="Despegar", bg="dark orange", command=takeoff)
-    takeOffBtn.grid(row=7, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    takeOffBtn.grid(row=3, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
 
 
     landBtn = tk.Button(controlFrame, text="Aterrizar", bg="dark orange", command=land)
-    landBtn.grid(row=8, column=0, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    landBtn.grid(row=4, column=0, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
 
     RTLBtn = tk.Button(controlFrame, text="RTL", bg="dark orange", command=RTL)
-    RTLBtn.grid(row=8, column=1, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    RTLBtn.grid(row=4, column=1, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
 
     stepSldr = tk.Scale(controlFrame, label="Step (m)", resolution=0.5, from_=0, to=10, tickinterval=1,
                         orient=tk.HORIZONTAL, command=setStep)
-    stepSldr.grid(row=9, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    stepSldr.grid(row=5, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
 
     navSpeedSldr = tk.Scale(controlFrame, label="Velocidad de navegación (m/s)", resolution=1, from_=0, to=10,
                             tickinterval=1,
                             orient=tk.HORIZONTAL, command=setNavSpeed)
-    navSpeedSldr.grid(row=10, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    navSpeedSldr.grid(row=6, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
 
     forwardBtn = tk.Button(controlFrame, text="Adelante", bg="dark orange", command=lambda: move("Forward", forwardBtn))
-    forwardBtn.grid(row=11, column=0, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    forwardBtn.grid(row=7, column=0, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
 
     backBtn = tk.Button(controlFrame, text="Atrás", bg="dark orange", command=lambda: move("Back", backBtn))
-    backBtn.grid(row=11, column=1, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    backBtn.grid(row=7, column=1, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
 
     leftBtn = tk.Button(controlFrame, text="Izquierda", bg="dark orange", command=lambda: move("Left", leftBtn))
-    leftBtn.grid(row=12, column=0, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    leftBtn.grid(row=8, column=0, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
 
     rightBtn = tk.Button(controlFrame, text="Derecha", bg="dark orange", command=lambda: move("Right", rightBtn))
-    rightBtn.grid(row=12, column=1, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    rightBtn.grid(row=8, column=1, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
 
     upBtn = tk.Button(controlFrame, text="Arriba", bg="dark orange", command=lambda: move("Up", upBtn))
-    upBtn.grid(row=13, column=0, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    upBtn.grid(row=9, column=0, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
 
     downBtn = tk.Button(controlFrame, text="Abajo", bg="dark orange", command=lambda: move("Down", downBtn))
-    downBtn.grid(row=13, column=1, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    downBtn.grid(row=9, column=1, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
 
     gradesSldr = tk.Scale(controlFrame, label="Cambiar el heading (grados)", resolution=5, from_=0, to=360,
                           tickinterval=90,
                           orient=tk.HORIZONTAL, command=changeHeading)
-    gradesSldr.grid(row=14, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    gradesSldr.grid(row=10, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
 
     #############################################################################
     alturaFrame = tk.LabelFrame(ventana, text="Altura")
