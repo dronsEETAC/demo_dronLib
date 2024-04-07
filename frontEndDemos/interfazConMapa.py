@@ -101,7 +101,7 @@ def crearEspacio ():
 
     iconSize = 20
     height = (canvasSize*dimN_S)//dimE_O
-    area = mapa.create_rectangle(0, 0, canvasSize, height, fill='gray')
+    area = mapa.create_rectangle(0, 0, canvasSize, height, fill='DeepPink2', stipple="gray12")
     menu = tk.Menu(ventana, tearoff=0)
     menu.add_command(label="Vuela aquí")
     mapa.bind('<Button-3>', goHere)
@@ -158,8 +158,10 @@ def process_local_telemetry_info (local_telemetry_info):
 
 def process_telemetry_info (telemetry_info):
     global mapa, dronIcon, dronHeading, armBtn
+    print ('**** ', telemetry_info)
     heading = round(telemetry_info['heading'],2)
     cambiar_orientacion(heading)
+    print ('telemetry en mapa ', telemetry_info)
 
     if telemetry_info['state'] == 'connected' and armBtn['bg'] == 'green':
         mapa.itemconfig(dronIcon, fill='red')
@@ -175,14 +177,15 @@ def process_telemetry_info (telemetry_info):
 def connect ():
     global dron, stepSldr, alturaSldr
     global height, arrow, mapa, dronIcon, dronHeading, connectBtn
-    global connectorEntry
+    global connectorEntry, connectOption
     if connectBtn ['text'] == 'Conectar':
-        connector = connectorEntry.get()
-        if connector == 'sim':
+        option = connectOption.get()
+        if option == 'Simulation':
             connection_string ='tcp:127.0.0.1:5763'
             baud = 115200
         else:
-            connection_string = connector
+            # assumo que está en marcha el mavproxy
+            connection_string ='udp:127.0.0.1:14551'
             baud = 57600
         dron.connect(connection_string,baud)
         dibuja_dron()
@@ -288,6 +291,8 @@ def move (direction, btn = None):
         btn['fg'] = 'white'
         if not dron.move (direction, blocking = False,  callback = lambda: llegada(btn)):
             mapa.itemconfig (area, outline='red', width = 10 )
+            btn['bg'] = 'orange'
+            btn['fg'] = 'black'
         else:
             mapa.itemconfig(area, outline='grey', width = 1 )
             dron.setNavSpeed(float(navSpeedSldr.get()))
@@ -329,7 +334,7 @@ def crear_ventana():
     global connectBtn, armBtn, takeOffBtn, landBtn, RTLBtn
     global canvasSize
     global connectorEntry
-    global scenarioFrame, controlFrame
+    global scenarioFrame, controlFrame, connectOption
 
     canvasSize = 800
     dron = Dron()
@@ -388,12 +393,25 @@ def crear_ventana():
     controlFrame.columnconfigure(0, weight=1)
     controlFrame.columnconfigure(1, weight=1)
 
-    connectBtn = tk.Button(controlFrame, text="Conectar", bg="dark orange", command = connect)
-    connectBtn.grid(row=0, column=0, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    connectFrame = tk.Frame(controlFrame)
+    connectFrame.grid(row=0, column=0,columnspan=2,  padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    connectFrame.rowconfigure(0, weight=1)
+    connectFrame.rowconfigure(1, weight=1)
+    connectFrame.columnconfigure(0, weight=1)
+    connectFrame.columnconfigure(1, weight=1)
 
-    connectorEntry = tk.Entry(controlFrame)
+    connectBtn = tk.Button(connectFrame, text="Conectar", bg="dark orange", command = connect)
+    connectBtn.grid(row=0, column=0, rowspan = 2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    connectOption = tk.StringVar()
+    connectOption.set ('Simulation')
+    option1 = tk.Radiobutton(connectFrame, text="Simulation", variable=connectOption, value="Simulation")
+    option1.grid(row=0, column=1, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    option2 = tk.Radiobutton(connectFrame, text="Production", variable=connectOption, value="Production")
+    option2.grid(row=1, column=1, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+
+    '''connectorEntry = tk.Entry(controlFrame)
     connectorEntry.insert(0,'sim')
-    connectorEntry.grid(row=0, column=1, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    connectorEntry.grid(row=0, column=1, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)'''
 
     armBtn = tk.Button(controlFrame, text="Armar", bg="dark orange", command=arm)
     armBtn.grid(row=1, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)

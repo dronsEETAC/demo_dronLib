@@ -17,7 +17,7 @@ def _send_local_telemetry_info(self, process_local_telemetry_info):
 
     self.sendLocalTelemetryInfo = True
     while self.sendLocalTelemetryInfo:
-        msg = self.vehicle.recv_match(type='LOCAL_POSITION_NED', blocking=True)
+        msg = self.vehicle.recv_match(type='LOCAL_POSITION_NED', blocking=True, timeout = 3)
 
         if msg:
             # La posición viene en formato NED, es decir:
@@ -32,11 +32,13 @@ def _send_local_telemetry_info(self, process_local_telemetry_info):
                 'posY': msg.y,
                 'posZ': msg.z,
             }
+            print ('local telemetry ', local_telemetry_info)
 
             if self.id == None:
                 process_local_telemetry_info (local_telemetry_info)
             else:
                 process_local_telemetry_info (self.id, local_telemetry_info)
+            time.sleep (1)
 
 
 def send_local_telemetry_info(self, process_local_telemetry_info):
