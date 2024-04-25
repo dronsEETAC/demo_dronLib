@@ -8,7 +8,7 @@ def _takeOff(self, aTargetAltitude,callback=None, params = None):
                                          mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, aTargetAltitude)
 
     while True:
-        msg = self.vehicle.recv_match(type='GLOBAL_POSITION_INT', blocking=True)
+        msg = self.vehicle.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=3)
         #print('meg ', msg)
         if msg:
             msg = msg.to_dict()
@@ -16,7 +16,7 @@ def _takeOff(self, aTargetAltitude,callback=None, params = None):
             if alt >= aTargetAltitude * 0.90:
                 print("Reached target altitude")
                 break
-        time.sleep(2)
+            time.sleep(1)
 
 
     self.state = "flying"

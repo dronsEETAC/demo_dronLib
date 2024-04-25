@@ -13,14 +13,14 @@ def _goDown(self, mode, callback=None, params = None):
     #arm_msg = self.vehicle.recv_match(type='COMMAND_ACK', blocking=True, timeout=3)
     #
     while True:
-        msg = self.vehicle.recv_match(type='GLOBAL_POSITION_INT', blocking=False)
+        msg = self.vehicle.recv_match(type='GLOBAL_POSITION_INT', blocking=False, timeout = 3)
         if msg:
             msg = msg.to_dict()
             alt = float(msg['relative_alt'] / 1000)
             print (alt)
             if alt < 0.5:
                 break
-            time.sleep(2)
+            time.sleep(1)
 
     self.vehicle.motors_disarmed_wait()
     self.state = "connected"

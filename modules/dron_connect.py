@@ -19,10 +19,10 @@ def _handle_heartbeat(self):
 def _connect(self, connection_string, baud, callback=None, params=None):
     self.vehicle = mavutil.mavlink_connection(connection_string, baud)
     self.vehicle.wait_heartbeat()
-    '''handleThread = threading.Thread (target = self._handle_heartbeat)
-    handleThread.start()'''
+    handleThread = threading.Thread (target = self._handle_heartbeat)
+    handleThread.start()
     self.state = "connected"
-    frequency_hz = 1
+    ''' frequency_hz = 4
     self.vehicle.mav.command_long_send(
         self.vehicle.target_system, self.vehicle.target_component,
         mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
@@ -32,13 +32,15 @@ def _connect(self, connection_string, baud, callback=None, params=None):
         0, 0, 0, 0,  # Unused parameters
         0,
         # Target address of message stream (if message has target address fields). 0: Flight-stack default (recommended), 1: address of requestor, 2: broadcast.
-    )
-    '''self.vehicle.mav.request_data_stream_send(
+    )'''
+    # en principio con este comando debe bastar para obtener telemetria global y local, pero desde que se
+    # conecta pasan unos segundos hasta que se recibe esa telemetría.
+    self.vehicle.mav.request_data_stream_send(
         self.vehicle.target_system, self.vehicle.target_component,
         mavutil.mavlink.MAV_DATA_STREAM_POSITION,
         10,
         1
-    )'''
+    )
     if callback != None:
         if self.id == None:
             if params == None:

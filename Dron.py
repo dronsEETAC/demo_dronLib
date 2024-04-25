@@ -26,6 +26,12 @@ class Dron(object):
 
         self.step = 1 # se usa en dron_mov. Son los metros que mueve en cada paso
         self.localGeofence = None # se usa en dron_mov para evitar que el dron se salga del espacio
+        self.localGeofenceEnabled = False
+        self.localGeofenceBreachAction = 0
+        #   0     Informar
+        #   1     Informar y detener
+        #   2     Informar y aterrizar inmediatamente
+
         self.position = [0,0,0] # se usa en dron_mov para identificar la posición del dron dentro del espacio
         self.heading = None
 
@@ -50,6 +56,6 @@ class Dron(object):
 
     from modules.dron_local_telemetry import send_local_telemetry_info, _send_local_telemetry_info, stop_sending_local_telemetry_info
     from modules.dron_mov import move, _move, _prepare_command_mov, setStep, moveto, _moveto, _prepare_command_movto, inGeofence, setLocalGeofence
-    from modules.dron_mov import inGeofence, _futurePosition, check, _distance, _destination,setNavSpeed
+    from modules.dron_mov import inGeofence, _futurePosition, check, _distance, _destination,setNavSpeed, enableLocalGeofence, disableLocalGeofence, setLocalGeofenceBreachAction
     from modules.dron_mission import executeMission, _executeMission
 

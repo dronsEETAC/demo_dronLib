@@ -10,7 +10,7 @@ def informar (mensaje):
 def showTelemetryInfo (telemetry_info):
     global heading, altitude, groundSpeed, state
     global altShowLbl, headingShowLbl, speedShowLbl
-    print (telemetry_info)
+    print ('alt: ', telemetry_info['alt'],2)
     altShowLbl['text'] = round (telemetry_info['alt'],2)
     headingShowLbl['text'] =  round(telemetry_info['heading'],2)
     speedShowLbl['text'] = round (telemetry_info['groundSpeed'],2)
@@ -32,7 +32,7 @@ def arm ():
 
 def takeoff ():
     global dron
-    dron.takeOff (10, blocking = False,  callback = informar, params= 'VOLANDO')
+    dron.takeOff (20, blocking = False,  callback = informar, params= 'VOLANDO')
     #dron.takeOff (8)
 
 def land ():

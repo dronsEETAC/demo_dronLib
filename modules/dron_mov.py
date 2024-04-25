@@ -88,26 +88,31 @@ def _move(self, direction, callback=None, params = None):
     destZ = self.position[2]
     if direction == "Forward":
         destX,destY = self._destination (self.position[0], self.position[1], step, self.heading)
-        self.cmd = self._prepare_command_mov(step, 0, 0)  # NORTH
+        self.cmd = self._prepare_command_mov(step, 0, 0)
     if direction == "Back":
         destX, destY = self._destination(self.position[0], self.position[1], step, self.heading + 180)
-        self.cmd = self._prepare_command_mov(-step, 0, 0)  # SOUTH
+        self.cmd = self._prepare_command_mov(-step, 0, 0)
     if direction == "Left":
         destX, destY = self._destination(self.position[0], self.position[1], step, self.heading - 90)
-        self.cmd = self._prepare_command_mov(0, -step, 0)  # EAST
+        self.cmd = self._prepare_command_mov(0, -step, 0)
     if direction == "Right":
         destX, destY = self._destination(self.position[0], self.position[1], step, self.heading + 90)
-        self.cmd = self._prepare_command_mov(0, step, 0)  # WEST
+        self.cmd = self._prepare_command_mov(0, step, 0)
     if direction == "Up":
         destX = self.position[0]
         destY = self.position[1]
         destZ = self.position[2] - step
-        self.cmd = self._prepare_command_mov(0, 0, -step)  # NORTHWEST
+        self.cmd = self._prepare_command_mov(0, 0, -step)
     if direction == "Down":
         destX = self.position[0]
         destY = self.position[1]
         destZ = self.position[2] + step
-        self.cmd = self._prepare_command_mov(0, 0, step)  # NORTHEST
+        self.cmd = self._prepare_command_mov(0, 0, step)
+    if direction == "Stop":
+        destX = self.position[0]
+        destY = self.position[1]
+        destZ = self.position[2]
+        self.cmd = self._prepare_command_mov(0, 0, 0)
 
     self.vehicle.mav.send(self.cmd)
 
@@ -131,17 +136,35 @@ def _move(self, direction, callback=None, params = None):
             else:
                 callback(self.id, params)
 
-def move(self, direction, blocking=True, callback=None, params = None):
-    if self.check (direction):
+def move2(self, direction, blocking=True, callback=None, params = None):
+    if self.localGeofenceEnabled:
+        if self.check (direction):
+            if blocking:
+                self._move(direction)
+            else:
+                moveThread = threading.Thread(target=self._move, args=[direction, callback, params,])
+                moveThread.start()
+            return True
+
+        else:
+            return False
+    else:
         if blocking:
             self._move(direction)
         else:
-            moveThread = threading.Thread(target=self._move, args=[direction, callback, params,])
+            moveThread = threading.Thread(target=self._move, args=[direction, callback, params, ])
             moveThread.start()
         return True
 
+
+def move(self, direction, blocking=True, callback=None, params = None):
+    if blocking:
+        self._move(direction)
     else:
-        return False
+        moveThread = threading.Thread(target=self._move, args=[direction, callback, params, ])
+        moveThread.start()
+    return True
+
 
 def _distance(self, destX, destY, destZ, posX, posY, posZ):
 
@@ -182,16 +205,27 @@ def _moveto (self, destination, callback=None, params = None):
 
 def moveto(self, position, blocking=True, callback=None, params = None):
 # Esto hay que arreglarlo. Debería comprobar que el dron está flying
-# Además, debería compronar que hay un geofence antes de hacer ekl chequeo
-    if self.inGeofence (position):
+# Además, debería compronar que hay un geofence antes de hacer el chequeo
+
+    if self.localGeofenceEnabled:
+
+        if self.inGeofence (position):
+            if blocking:
+                self._moveto(position)
+            else:
+                moveThread = threading.Thread(target=self._moveto, args=[position, callback, params,])
+                moveThread.start()
+            return True
+        else:
+            return False
+    else:
         if blocking:
             self._moveto(position)
         else:
-            moveThread = threading.Thread(target=self._moveto, args=[position, callback, params,])
+            moveThread = threading.Thread(target=self._moveto, args=[position, callback, params, ])
             moveThread.start()
         return True
-    else:
-        return False
+
 
 def setLocalGeofence (self, dimN_S, dimE_O, altura):
     # el geofence local se define en términos de las dimensiones
@@ -199,7 +233,9 @@ def setLocalGeofence (self, dimN_S, dimE_O, altura):
 
     self.localGeofence = [dimN_S, dimE_O, altura]
 
-def inGeofence (self,position):
+def inGeofence2 (self,position):
+    print ('posicion ', position)
+    print ('geofence ', self.localGeofence)
     # la posición a la que queremos ir está en formato NED (excepto la altura, que está en positivo)
     if  abs(position[0]) < self.localGeofence[0]//2 and \
         abs(position[1]) < self.localGeofence[1] // 2 and \
@@ -211,6 +247,18 @@ def inGeofence (self,position):
         print ('NOOOO')
         return False
 
+def inGeofence (self):
+
+    # la posición a la que queremos ir está en formato NED (excepto la altura, que está en positivo)
+    if  abs(self.position[0]) < self.localGeofence[0]//2 and \
+        abs(self.position[1]) < self.localGeofence[1] // 2 and \
+        -self.position[2] < self.localGeofence[2] and -self.position[2] > 0:
+        return True
+    else:
+        print (self.position)
+        print (self.localGeofence)
+        print ('NOOOO')
+        return False
 
 def _futurePosition (self,  angulo):
     # Convertir el ángulo a radianes
@@ -262,3 +310,12 @@ def setNavSpeed (self, speed):
         -1,  # Velocidad máxima (-1 para no limitar)
         0, 0, 0, 0)  # Parámetros adicionales (no utilizados)
     self.vehicle.mav.send(msg)
+
+def enableLocalGeofence (self):
+    self.localGeofenceEnabled = True
+
+def disableLocalGeofence (self):
+    self.localGeofenceEnabled = False
+
+def setLocalGeofenceBreachAction (self,action):
+    self.localGeofenceBreachAction = action
