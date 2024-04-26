@@ -27,14 +27,16 @@ class Dron(object):
         self.step = 1 # se usa en dron_mov. Son los metros que mueve en cada paso
         self.localGeofence = None # se usa en dron_mov para evitar que el dron se salga del espacio
         self.localGeofenceEnabled = False
+        self.localGeofenceChecking = False
         self.localGeofenceBreachAction = 0
         #   0     Informar
         #   1     Informar y detener
         #   2     Informar y aterrizar inmediatamente
-
+        self.localGeofenceBreachCallback = None
+        self.localGeofenceBreachCallbackParams = None
         self.position = [0,0,0] # se usa en dron_mov para identificar la posición del dron dentro del espacio
         self.heading = None
-
+        self.lastDirection = None
 
     # aqui se importan los métodos de la clase Dron, que están organizados en ficheros.
     # Así podría orgenizarse la aportación de futuros alumnos que necesitasen incorporar nuevos servicios
@@ -55,7 +57,8 @@ class Dron(object):
     from modules.dron_telemetry import send_telemetry_info, _send_telemetry_info, stop_sending_telemetry_info
 
     from modules.dron_local_telemetry import send_local_telemetry_info, _send_local_telemetry_info, stop_sending_local_telemetry_info
-    from modules.dron_mov import move, _move, _prepare_command_mov, setStep, moveto, _moveto, _prepare_command_movto, inGeofence, setLocalGeofence
-    from modules.dron_mov import inGeofence, _futurePosition, check, _distance, _destination,setNavSpeed, enableLocalGeofence, disableLocalGeofence, setLocalGeofenceBreachAction
+    from modules.dron_mov import move, _move, _prepare_command_mov, setStep, moveto, _moveto, _prepare_command_movto
+    from modules.dron_mov import  _futurePosition, check, _distance, _destination,setNavSpeed, _recover
     from modules.dron_mission import executeMission, _executeMission
+    from modules.dron_localGeofence import enableLocalGeofence, disableLocalGeofence, setLocalGeofenceBreachAction, setLocalGeofence, _inGeofence, _localGeofenceCheck, startLocalGeofenceChecking, stopLocalGeofenceChecking
 

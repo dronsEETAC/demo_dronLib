@@ -12,30 +12,7 @@ import subprocess
 import pygame as pygame
 from TTT import *
 from PIL import Image,ImageTk
-'''
-def Habla (frase):
-    tts = gTTS(text=frase, lang='es')
-    tts.save("tecsify.mp3")
 
-    # Inicializar pygame
-    pygame.init()
-
-    # Ocultar la ventana de pygame
-    pygame.display.set_mode((1, 1))
-
-    # Reproducir el archivo de audio
-    pygame.mixer.music.load("tecsify.mp3")
-    pygame.mixer.music.play()
-
-    # Esperar a que termine la reproducción
-    while pygame.mixer.music.get_busy():
-        pygame.time.Clock().tick(10)
-
-    # Detener pygame
-    pygame.quit()
-    os.remove("tecsify.mp3")
-
-'''
 class Conversor:
     # La conversion entre posiciones y coordenadas tiene esta dificultad: las coordenadas
     # corresponden al plano XY. Desplazamientos en la dimensión X corresponden a movimiento Este-Oeste
@@ -64,6 +41,7 @@ class Conversor:
 def informar (mensaje):
     global dron
     print (mensaje)
+
 def volando ():
     global ttt, talking
     global mapa, dronIcon, dronHeading, takeOffBtn
@@ -105,7 +83,10 @@ def goHere (event):
             dron.setNavSpeed(float (navSpeedSldr.get()))
             destination = mapa.create_oval(event.x - 5, event.y -5 , event.x + 5, event.y + 5 , fill='blue')
     else:
-        messagebox.showerror(title=None, message="El dron no está volando")
+        if talking:
+            ttt.talk("El dron no está volando")
+        else:
+            messagebox.showerror(title=None, message="El dron no está volando")
 
 
 
@@ -117,10 +98,11 @@ def crearEspacio ():
     global menu
     global height
     global dron
-    global canvasSize, area
+    global canvasSize, area, areaSize
     global controlFrame, scenarioFrame
     global schema
     global var1, var2
+    global altura
 
     mapa.delete (schema)
 
@@ -128,6 +110,7 @@ def crearEspacio ():
     dimN_S = int (dimYSldr.get())
     altura = int (dimZSldr.get())
     dron.setLocalGeofence(dimN_S,dimE_O,altura)
+
 
 
 
@@ -143,22 +126,24 @@ def crearEspacio ():
 
 
     iconSize = 20
-    height = (canvasSize*dimN_S)//dimE_O
-    area = mapa.create_rectangle(0, 0, canvasSize, height, fill='DeepPink2', stipple="gray12")
+    areaSize = canvasSize - 60
+    height = (areaSize*dimN_S)//dimE_O
+    area = mapa.create_rectangle(0, 0, areaSize, height, fill='DeepPink2', stipple="gray12")
     menu = tk.Menu(ventana, tearoff=0)
     menu.add_command(label="Vuela aquí")
     mapa.bind('<Button-3>', goHere)
-    homeIcon = mapa.create_oval(canvasSize//2-iconSize//2, height//2 - iconSize//2, canvasSize//2+iconSize//2, height//2 + iconSize//2, outline='red',  width=2)
+    homeIcon = mapa.create_oval(areaSize//2-iconSize//2, height//2 - iconSize//2, areaSize//2+iconSize//2, height//2 + iconSize//2, outline='red',  width=2)
     conversor = Conversor()
-    conversor.setUp (dimE_O, dimN_S, canvasSize, height)
+    conversor.setUp (dimE_O, dimN_S, areaSize, height)
+    mapa.itemconfig(area, outline='black', width=5)
 
 
 
 def dibuja_dron ():
     global height, iconSize, arrowLength
-    global dronIcon, dronHeading
+    global dronIcon, dronHeading, areaSize
 
-    x, y = canvasSize//2, height//2
+    x, y = areaSize//2, height//2
     arrowLength = 40
     dronIcon = mapa.create_oval(x - iconSize // 2, y - iconSize // 2, x + iconSize // 2,
                                 y + iconSize // 2, fill='red')
@@ -188,28 +173,25 @@ def cambiar_orientacion(angulo):
     y_final = y - arrowLength * math.cos(angulo_rad)
     mapa.coords(dronHeading, x, y, x_final, y_final)
 
-def process_local_telemetry_info (local_telemetry_info, breach):
+def process_local_telemetry_info (local_telemetry_info):
     global mapa, dronIcon, alturaSldr, iconSize, headingArrow
     global connectBtn
     global talking
     global var2, dron
 
-    if connectBtn['text'] == 'Conectar':
+    if connectBtn['text'] == 'Conectando...':
         connectBtn['bg'] = 'green'
         connectBtn['text'] = 'Desconectar'
         connectBtn['fg'] = 'white'
         if talking:
             ttt.talk ('Ya tienes conexión con el dron')
 
-    if breach:
-        print ('*********************')
     else:
         posX = round (local_telemetry_info['posX'],2)
         posY = round (local_telemetry_info['posY'],2)
         posZ = round (local_telemetry_info['posZ'],2)
 
         alt = math.ceil(-posZ*10)/10
-        pos = [dron.position[0], dron.position[1], alt]
         alturaSldr.set (alt)
         x, y = conversor.convertToCoord(posX, posY)
         mueve_dron (x,y)
@@ -218,11 +200,9 @@ def process_local_telemetry_info (local_telemetry_info, breach):
 def process_telemetry_info (telemetry_info):
     global mapa, dronIcon, dronHeading, armBtn, initialHeading
 
-
     heading = round(telemetry_info['heading'],2)
     if initialHeading == None:
         initialHeading = heading
-        print ('initial heading: ', initialHeading)
     cambiar_orientacion(heading- initialHeading)
 
 
@@ -234,12 +214,20 @@ def process_telemetry_info (telemetry_info):
         armBtn['fg'] = 'black'
 
 
-
+def notify_breach ():
+    global lastButton
+    global mapa, area
+    if lastButton != None:
+        lastButton['bg'] = 'orange',
+        lastButton['fg'] = 'black'
+    mapa.itemconfig(area, outline='red', width=15)
+    if talking:
+        ttt.talk('Te sales de los límites')
 
 
 def connect ():
     global dron, stepSldr, alturaSldr
-    global height, arrow, mapa, dronIcon, dronHeading, connectBtn
+    global height, arrow, mapa, dronIcon, dronHeading, connectBtn, altura
     global connectorEntry, connectOption
     if connectBtn ['text'] == 'Conectar':
         option = connectOption.get()
@@ -252,26 +240,26 @@ def connect ():
             baud = 57600
         dron.connect(connection_string,baud)
         dibuja_dron()
+
         parameters = json.dumps([
             {'ID': "WP_YAW_BEHAVIOR", 'Value': 0},
+            {'ID': "RTL_ALT", 'Value': altura - 1},
         ])
         dron.setParams(parameters)
 
         stepSldr.set (0.5)
 
         alturaSldr.set (0)
-        print ('llamo a set del slider')
         navSpeedSldr.set (1.0)
-        print('llamo a set del dron')
         dron.setNavSpeed(1.0)
+
         dron.send_local_telemetry_info(process_local_telemetry_info)
         dron.send_telemetry_info(process_telemetry_info)
-        '''dron.setLocalGeofenceBreachAction(2)
-        dron.enableLocalGeofence()'''
 
-        """connectBtn ['bg']='green'
-        connectBtn ['text']='Desconectar'
-        connectBtn ['fg']='white'"""
+
+        connectBtn ['bg']='yellow'
+        connectBtn ['text']='Conectando...'
+        connectBtn ['fg']='black'
 
     else:
         if dron.disconnect():
@@ -321,7 +309,7 @@ def takeoff ():
 
 def enTierra ():
     global mapa, dronIcon, dronHeading, landBtn, armBtn, takeOffBtn, RTLBtn
-    print ('ya estoy en el call back')
+
     mapa.itemconfig(dronIcon, fill='red')
     mapa.itemconfig(dronHeading, fill='red')
     landBtn['bg'] = 'orange',
@@ -339,6 +327,8 @@ def enTierra ():
     takeOffBtn['bg'] = 'orange',
     takeOffBtn['text'] = 'Despegar',
     takeOffBtn['fg'] = 'black'
+    if talking:
+            ttt.talk("Ya estamos en tierra")
 
 def land():
     global dron, mapa, landBtn
@@ -375,18 +365,17 @@ def llegada (btn):
 def move (direction, btn = None):
     global dron, area, mapa, takeOffBtn
     global ttt, talking
+    global lastButton
+    lastButton = btn
     if takeOffBtn['bg'] == 'green':
+        if dron.localGeofenceEnabled:
+            mapa.itemconfig(area, outline='red', width=5)
+        else:
+            mapa.itemconfig(area, outline='black', width=5)
         btn['bg'] = 'green'
         btn['fg'] = 'white'
-        if not dron.move (direction, blocking = False,  callback = lambda: llegada(btn)):
-            mapa.itemconfig (area, outline='red', width = 10 )
-            btn['bg'] = 'orange'
-            btn['fg'] = 'black'
-            if talking:
-                ttt.talk ('Te sales de los limites')
-        else:
-            mapa.itemconfig(area, outline='grey', width = 1 )
-            dron.setNavSpeed(float(navSpeedSldr.get()))
+        dron.move (direction, blocking = False,  callback = lambda: llegada(btn))
+
     else:
         if talking:
             ttt.talk("El dron no está volando")
@@ -417,7 +406,6 @@ def setStep (step):
 
 def setNavSpeed (speed):
     global dron
-    print ('llamamos a fijar speed ', speed)
     dron.setNavSpeed(float(speed))
 
 def talkClick ():
@@ -484,6 +472,24 @@ def talk ():
 
         time.sleep (1)
 
+def activarGeofence ():
+    global dron, var1
+    global mapa, area
+    global geofenceEnableBtn
+    if dron.localGeofenceEnabled:
+        dron.disableLocalGeofence()
+        mapa.itemconfig(area, outline='black', width=5)
+        geofenceEnableBtn['text'] = 'Activa el geofence'
+        geofenceEnableBtn['bg'] = 'dark orange'
+        geofenceEnableBtn['fg'] = 'black'
+    else:
+        dron.setLocalGeofenceBreachAction(int (var1.get()))
+        dron.enableLocalGeofence(notify_breach)
+        mapa.itemconfig(area, outline='red', width=5)
+        geofenceEnableBtn['text'] = 'Desactiva el geofence'
+        geofenceEnableBtn['bg'] = 'green'
+        geofenceEnableBtn['fg'] = 'white'
+
 def crear_ventana():
     global dron
     global ttt
@@ -497,7 +503,8 @@ def crear_ventana():
     global talkBtn, talking
     global initialHeading
     global image, bg, schema
-    global var1, var2
+    global var1, var2, var3
+    global geofenceEnableBtn
 
     canvasSize = 800
     dron = Dron()
@@ -542,18 +549,18 @@ def crear_ventana():
 
     crearBtn = tk.Button(scenarioFrame, text="Crear espacio", bg="dark orange", command=crearEspacio)
     crearBtn.grid(row=3, column=0, columnspan=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
-    limitsFrame = tk.LabelFrame(scenarioFrame, text="En caso de superar los límites...")
+    limitsFrame = tk.LabelFrame(scenarioFrame, text="En caso de superar los límites del área de vuelo...")
     limitsFrame.grid(row=4, column=0, columnspan=2, padx=5, pady=(20,5), sticky=tk.N + tk.S + tk.E + tk.W)
+
 
     var1 = tk.IntVar()
     var1.set(1)
 
-    var2 = tk.IntVar()
-    var2.set(1)
-    checkbox1 = tk.Checkbutton(limitsFrame, text="Avisar pero no obedecer el comando", variable=var1).pack(anchor="w")
+    checkbox1 = tk.Radiobutton(limitsFrame, text="Ignorar el comando", variable=var1, value=1).pack(anchor="w")
 
-    checkbox2 = tk.Checkbutton(limitsFrame, text="Aterrizar inmediatamente si se superan los limites", variable=var2).pack(anchor="w")
+    checkbox2 = tk.Radiobutton(limitsFrame, text="Aterrizar", variable=var1, value=2).pack(anchor="w")
 
+    checkbox3 = tk.Radiobutton(limitsFrame, text="Retornar al origen", variable=var1, value = 3).pack(anchor="w")
 
     #############################################################################
     controlFrame = tk.LabelFrame(ventana, text="Controles")
@@ -656,8 +663,21 @@ def crear_ventana():
     mapaFrame = tk.LabelFrame(ventana, text="Mapa")
     mapaFrame.grid(row=0, column=2, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
 
-    talkBtn = tk.Button(mapaFrame, text="Clica aquí para hablar conmigo", bg="dark orange", command = talkClick)
-    talkBtn.pack(fill=tk.BOTH , padx = 40)
+    '''mapaFrame.rowconfigure(0, weight=1)
+    mapaFrame.rowconfigure(1, weight=1)
+    mapaFrame.columnconfigure(0, weight=1)
+    mapaFrame.columnconfigure(1, weight=1)'''
+    buttonFrame = tk.Frame (mapaFrame)
+    buttonFrame.pack()
+
+    talkBtn = tk.Button(buttonFrame, text="Clica aquí para hablar conmigo", bg="dark orange", command = talkClick)
+    #talkBtn.grid(row=0, column=0, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
+    talkBtn.pack(side = tk.LEFT)
+
+    geofenceEnableBtn = tk.Button(buttonFrame, text="Activar geofence local", bg="dark orange",
+                               command=activarGeofence)
+    geofenceEnableBtn.pack(side = tk.LEFT)
+    #geofenceEnableBtn.grid(row=0, column=1, padx=5, pady=5, sticky=tk.N + tk.S + tk.E + tk.W)
 
     #talkBtn.grid(row=0, column=0, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
 
@@ -673,9 +693,9 @@ def crear_ventana():
 
 
 
-    #mapa.grid(row=1, column=0, padx=5, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
+    #mapa.grid(row=1, column=0, columnspan=2, pady=3, sticky=tk.N + tk.S + tk.E + tk.W)
     #mapa.pack( fill=tk.BOTH)
-    mapa.pack( )
+    mapa.pack()
 
 
     return ventana

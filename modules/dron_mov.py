@@ -136,8 +136,38 @@ def _move(self, direction, callback=None, params = None):
             else:
                 callback(self.id, params)
 
-def move2(self, direction, blocking=True, callback=None, params = None):
-    if self.localGeofenceEnabled:
+
+def _recover(self):
+    print ('recover')
+    step = 1
+    if self.lastDirection == "Forward":
+        self.cmd = self._prepare_command_mov(-step, 0, 0)
+    if self.lastDirection == "Back":
+        self.cmd = self._prepare_command_mov(step, 0, 0)
+    if self.lastDirection == "Left":
+        self.cmd = self._prepare_command_mov(0, step, 0)
+    if self.lastDirection == "Right":
+        self.cmd = self._prepare_command_mov(0, -step, 0)
+    if self.lastDirection == "Up":
+        self.cmd = self._prepare_command_mov(0, 0, step)
+    if self.lastDirection == "Down":
+        self.cmd = self._prepare_command_mov(0, 0, -step)
+
+    self.stopLocalGeofenceChecking()
+    self.vehicle.mav.send(self.cmd)
+
+
+    while not self._inGeofence():
+        time.sleep(1)
+    self._move ('Stop')
+    self.startLocalGeofenceChecking()
+
+
+
+
+def move(self, direction, blocking=True, callback=None, params = None):
+    if self.localGeofenceEnabled and self.localGeofenceBreachAction == 1:
+        print ('voy a comproar ', direction)
         if self.check (direction):
             if blocking:
                 self._move(direction)
@@ -147,17 +177,29 @@ def move2(self, direction, blocking=True, callback=None, params = None):
             return True
 
         else:
-            return False
+            if self.localGeofenceBreachCallback != None:
+                if self.id == None:
+                    if self.localGeofenceBreachCallbackParams == None:
+                        self.localGeofenceBreachCallback()
+                    else:
+                        self.localGeofenceBreachCallback(self.localGeofenceBreachCallbackParams)
+                else:
+                    if self.localGeofenceBreachCallbackParams == None:
+                        self.localGeofenceBreachCallback(self.id)
+                    else:
+                        self.localGeofenceBreachCallback(self.id, self.localGeofenceBreachCallbackParams)
+
+
+
     else:
         if blocking:
             self._move(direction)
         else:
             moveThread = threading.Thread(target=self._move, args=[direction, callback, params, ])
             moveThread.start()
-        return True
 
 
-def move(self, direction, blocking=True, callback=None, params = None):
+def move2(self, direction, blocking=True, callback=None, params = None):
     if blocking:
         self._move(direction)
     else:
@@ -207,31 +249,13 @@ def moveto(self, position, blocking=True, callback=None, params = None):
 # Esto hay que arreglarlo. Debería comprobar que el dron está flying
 # Además, debería compronar que hay un geofence antes de hacer el chequeo
 
-    if self.localGeofenceEnabled:
-
-        if self.inGeofence (position):
-            if blocking:
-                self._moveto(position)
-            else:
-                moveThread = threading.Thread(target=self._moveto, args=[position, callback, params,])
-                moveThread.start()
-            return True
-        else:
-            return False
+    if blocking:
+        self._moveto(position)
     else:
-        if blocking:
-            self._moveto(position)
-        else:
-            moveThread = threading.Thread(target=self._moveto, args=[position, callback, params, ])
-            moveThread.start()
-        return True
+        moveThread = threading.Thread(target=self._moveto, args=[position, callback, params, ])
+        moveThread.start()
 
 
-def setLocalGeofence (self, dimN_S, dimE_O, altura):
-    # el geofence local se define en términos de las dimensiones
-    # del espacio, es este orden: Norte-sur, Este-oeste, altura
-
-    self.localGeofence = [dimN_S, dimE_O, altura]
 
 def inGeofence2 (self,position):
     print ('posicion ', position)
@@ -247,18 +271,6 @@ def inGeofence2 (self,position):
         print ('NOOOO')
         return False
 
-def inGeofence (self):
-
-    # la posición a la que queremos ir está en formato NED (excepto la altura, que está en positivo)
-    if  abs(self.position[0]) < self.localGeofence[0]//2 and \
-        abs(self.position[1]) < self.localGeofence[1] // 2 and \
-        -self.position[2] < self.localGeofence[2] and -self.position[2] > 0:
-        return True
-    else:
-        print (self.position)
-        print (self.localGeofence)
-        print ('NOOOO')
-        return False
 
 def _futurePosition (self,  angulo):
     # Convertir el ángulo a radianes
@@ -294,7 +306,7 @@ def check (self, direction):
         angle = self.heading + 90
     futureN_S, futureE_O = self._futurePosition (angle)
     futureAlt = -self.position[2]
-    if self.inGeofence ([futureN_S, futureE_O, futureAlt]):
+    if self._inGeofence ([futureN_S, futureE_O, futureAlt]):
         return True
     else:
         return False
@@ -311,11 +323,3 @@ def setNavSpeed (self, speed):
         0, 0, 0, 0)  # Parámetros adicionales (no utilizados)
     self.vehicle.mav.send(msg)
 
-def enableLocalGeofence (self):
-    self.localGeofenceEnabled = True
-
-def disableLocalGeofence (self):
-    self.localGeofenceEnabled = False
-
-def setLocalGeofenceBreachAction (self,action):
-    self.localGeofenceBreachAction = action
