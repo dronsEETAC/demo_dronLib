@@ -33,7 +33,7 @@ def _send_local_telemetry_info(self, process_local_telemetry_info):
                 'posY': msg.y,
                 'posZ': msg.z,
             }
-
+            #print (' local ', local_telemetry_info)
             if self.id == None:
                 process_local_telemetry_info (local_telemetry_info)
             else:

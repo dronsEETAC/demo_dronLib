@@ -3,9 +3,9 @@ class Dron(object):
     def __init__(self):
 
         self.state = "disconnected"
-        self.lat = None
-        self.lon = None
-        self.alt = None
+        self.lat = 0
+        self.lon = 0
+        self.alt = 0
         ''' los otros estados son:
             connected
             arming
@@ -35,9 +35,10 @@ class Dron(object):
         self.localGeofenceBreachCallback = None
         self.localGeofenceBreachCallbackParams = None
         self.position = [0,0,0] # se usa en dron_mov para identificar la posición del dron dentro del espacio
-        self.heading = None
+        self.heading = 0
         self.lastDirection = None
 
+        self.lastPositionBeforeLocalGeofenceBreach = None
     # aqui se importan los métodos de la clase Dron, que están organizados en ficheros.
     # Así podría orgenizarse la aportación de futuros alumnos que necesitasen incorporar nuevos servicios
     # para sus aplicaciones. Crearían un fichero con sus nuevos métodos y lo importarían aquí
@@ -47,7 +48,7 @@ class Dron(object):
 
     from modules.dron_connect import connect, _connect, disconnect, _handle_heartbeat
     from modules.dron_arm import arm, _arm
-    from modules.dron_takeOff import takeOff, _takeOff
+    from modules.dron_takeOff import takeOff, _takeOff, request_message_interval
     from modules.dron_RTL_Land import  RTL, Land, _goDown
     from modules.dron_nav import _prepare_command, startGo, stopGo, go, _startGo, changeHeading, fixHeading, unfixHeading, changeNavSpeed
     from modules.dron_goto import goto, _goto, _distanceToDestinationInMeters
@@ -60,5 +61,6 @@ class Dron(object):
     from modules.dron_mov import move, _move, _prepare_command_mov, setStep, moveto, _moveto, _prepare_command_movto
     from modules.dron_mov import  _futurePosition, check, _distance, _destination,setNavSpeed, _recover
     from modules.dron_mission import executeMission, _executeMission
-    from modules.dron_localGeofence import enableLocalGeofence, disableLocalGeofence, setLocalGeofenceBreachAction, setLocalGeofence, _inGeofence, _localGeofenceCheck, startLocalGeofenceChecking, stopLocalGeofenceChecking
+    from modules.dron_localGeofence import enableLocalGeofence, disableLocalGeofence, setLocalGeofenceBreachAction, setLocalGeofence, _inGeofence, _localGeofenceCheck, startLocalGeofenceChecking, stopLocalGeofenceChecking, _goToLastPositionBeforeLocalGeofenceBreach
 
+    from modules.dron_RC_overrride import send_rc, status_loop, get_thruster_outputs, clear_motion
